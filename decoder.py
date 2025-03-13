@@ -4,7 +4,7 @@ def json_to_plantuml(data:dict) -> str:
     if data["diagramType"] == "classDiagram":
         plantuml_str += decodeClassDiagram(data)
     elif data["diagramType"] == "useCaseDiagram":
-        print("Diagrama de casos de uso")
+        plantuml_str += decodeUseCaseDiagram(data)
 
     plantuml_str += "@enduml"
     return plantuml_str
@@ -21,8 +21,8 @@ def decodeClassDiagram(data:dict) -> str:
         "composition": "*--",
         "aggregation": "o--",
         "association": "--",
-        "instantiation": "",
-        "realization": "",
+        "instantiation": "..|>",
+        "realization": "<|..",
     }
 
     isStatic = '{static} '
@@ -34,24 +34,37 @@ def decodeClassDiagram(data:dict) -> str:
         
         # adding attributes for clases
         for attribute in clase.get("attributes", []):
-            attribute_str = f"{clase['name']} : {visibilities[attribute.get('visibility', '')]}{isStatic if attribute['isStatic'] else ''}{attribute['name']} {attribute['type']}\n"
-            plantuml_str += attribute_str
+            visibility = visibilities[attribute.get('visibility', '')]
+            static = "{isStatic}" if attribute['isStatic'] else ''
+            final = "{final}" if attribute.get('isFinal', False) else ''
+            plantuml_str += f"{clase['name']} : {visibility} {static} {final} {attribute['name']} {attribute['type']}\n"
 
         # adding methods for clases    
         for method in clase.get('methods', []):
-            plantuml_str += f"{clase.get('name', '')} : {method.get('returnType', '')} {method.get('name', '')}()\n"
+            abstract = "{abstract}" if method.get('isAbstract', False) else ''
+            visibility = visibilities[method.get('visibility', 'public')]
+            returnType =  method.get('returnType', 'void')
+            plantuml_str += f"{clase.get('name', '')} : {visibility} {abstract} {returnType} {method.get('name', '')}()\n"
         
         # adding relationsihps
-        for relation in clase.get("relationships", []):
-            relation_str = f"{clase['name']} {relations_type[relation.get('type', [])]} {relation['target']}\n"
-            plantuml_str += relation_str
+        for relation in clase.get('relationships', []):
+            relationType = relations_type[relation.get('type', [])]
+            # to implement the muliplicity
+            multiplicity = f"{relation['multiplicity']} " if 'multiplicity' in relation else ''
+            plantuml_str += f"{clase['name']} {relationType} {relation['target']}\n"
+
+        # adding interfaces implementeds
+        for interfaz in clase.get('implementsInterfaces', []):
+            plantuml_str += f"{clase['name']} ..|> {interfaz}\n"
     
     # interfaces
-    for interfaz in data.get("interfaces", []):
-        plantuml_str += f"interfaz {interfaz.get('name', '')}\n"
+    for interfaz in data.get('interfaces', []):
+        plantuml_str += f"interface {interfaz.get('name', 'interfazName')}\n"
         for method in interfaz.get('methods', []):
-            plantuml_str += f"{interfaz.get('name', '')} : {method.get('returnType', '')} {method.get('name', '')}()\n"
+            plantuml_str += f"{interfaz.get('name', 'interfazName')} : {method.get('returnType', 'void')} {method.get('name', '')}()\n"
+    
     return plantuml_str
 
+# to do
 def decodeUseCaseDiagram(data:dict):
-    return ""
+    return 'plantuml to generate'

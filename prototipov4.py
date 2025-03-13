@@ -4,19 +4,12 @@ import sys
 
 def cargar_json_desde_archivo():
     """Carga un archivo JSON desde una ruta fija y lo devuelve como un diccionario."""
-    ruta_archivo = "c:/Users/107/Documents/VScodeCurso/diagrama.json"  # Ruta fija JSON
-    try:
-        with open(ruta_archivo, 'r', encoding='utf-8') as archivo:
-            return json.load(archivo)
-    except FileNotFoundError:
-        print(f"Error: El archivo '{ruta_archivo}' no existe.")
-        sys.exit(1)
-    except json.JSONDecodeError:
-        print(f"Error: El archivo '{ruta_archivo}' no tiene un formato JSON válido.")
-        sys.exit(1)
+    with open(sys.argv[1], "r", encoding="utf-8") as input:
+        return json.load(input)
+
 
 def json_a_plantuml(json_data):
-    plantuml_code = "@startuml\n"
+    plantuml_code = "@startuml Diagram\n"
 
     # Determinar el tipo de diagrama
     diagram_type = json_data.get("diagramType", "classDiagram")
@@ -109,11 +102,6 @@ def generar_use_case_diagram(json_data):
         
     return plantuml_code
 
-def guardar_archivo_plantuml(plantuml_code, ruta_salida):
-    """Guarda el código PlantUML en un archivo."""
-    with open(ruta_salida, 'w+', encoding='utf-8') as archivo:
-        archivo.write(plantuml_code)
-    print(f"Archivo PlantUML guardado en: {ruta_salida}")
 
 def main():
     # Cargar el archivo JSON
@@ -122,11 +110,8 @@ def main():
     # Generar el código PlantUML
     plantuml_code = json_a_plantuml(json_data)
 
-    # Guardar el código en un archivo .puml
-    ruta_salida = "c:/Users/107/Documents/VScodeCurso/diagrama.puml"
-    guardar_archivo_plantuml(plantuml_code, ruta_salida)
-
-    
+    with open("output.puml", "+w") as output:
+        output.write(plantuml_code)
 
     # Imprimir el resultado
     print(plantuml_code)

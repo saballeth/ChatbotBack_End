@@ -1,3 +1,37 @@
 @startuml Diagram
-abstract class Persona
+class Persona
+Persona : -   nombre String
+Persona : -   edad int
+Persona : +  String getNombre()
+Persona : +  void setNombre()
+Persona <|-- Estudiante
+Persona <|-- Profesor
+Persona ..|> Serializable
+class Estudiante
+Estudiante : -   matricula String
+Estudiante : +  void estudiar()
+class Profesor
+Profesor : -   salario double
+Profesor : +  void ensenar()
+class Curso
+Curso : -   codigo String
+Curso : -   nombre String
+Curso : +  void agregarEstudiante()
+Curso *-- Profesor
+Curso *-- Estudiante
+Curso ..|> Serializable
+abstract class Animal
+Animal : -   nombre String
+Animal : + {abstract} void hacerSonido()
+Animal <|-- Perro
+Animal <|-- Gato
+Animal ..|> Serializable
+class Perro
+Perro : -   raza String
+Perro : +  void hacerSonido()
+class Gato
+Gato : -   color String
+Gato : +  void hacerSonido()
+interface Serializable
+Serializable : String serializar()
 @enduml
