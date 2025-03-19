@@ -1,3 +1,18 @@
+visibilities = {
+    "private": "-",
+    "protected": "#",
+    "package private": "~",
+    "public": "+"
+}
+relations_type = {
+    "inheritance": "<|--",
+    "composition": "*--",
+    "aggregation": "o--",
+    "association": "--",
+    "instantiation": "..|>",
+    "realization": "<|..",
+}
+
 def json_to_plantuml(data:dict) -> str:
     plantuml_str =  "@startuml Diagram\n"
 
@@ -10,59 +25,48 @@ def json_to_plantuml(data:dict) -> str:
     return plantuml_str
 
 def decodeClassDiagram(data:dict) -> str:
-    visibilities = {
-        "private": "-",
-        "protected": "#",
-        "package private": "~",
-        "public": "+"
-    }
-    relations_type = {
-        "inheritance": "<|--",
-        "composition": "*--",
-        "aggregation": "o--",
-        "association": "--",
-        "instantiation": "..|>",
-        "realization": "<|..",
-    }
-
-    isStatic = '{static} '
     plantuml_str = ""
+
     # class
-    for clase in data.get("classes", []):
+    for element in data.get('declaringElements', []):
         # declare the class
-        plantuml_str += f"{'abstract ' if clase.get('isAbstract', '') else ''}class {clase['name']}\n"
+        type = element.get('type', '')
+        elementName = element.get('name', '')
+        plantuml_str += f"{type} {elementName}\n"
         
         # adding attributes for clases
-        for attribute in clase.get("attributes", []):
+        for attribute in element.get('attributes', []):
+            attributeName = attribute.get('name', '')
+            attributeType = attribute.get('type', '')
             visibility = visibilities[attribute.get('visibility', '')]
-            static = "{isStatic}" if attribute['isStatic'] else ''
+            static = "{isStatic}" if attribute.get('isStatic', False) else ''
             final = "{final}" if attribute.get('isFinal', False) else ''
-            plantuml_str += f"{clase['name']} : {visibility} {static} {final} {attribute['name']} {attribute['type']}\n"
+            plantuml_str += f"{elementName} : {visibility} {static} {final} {attributeType} {attributeName}\n"
 
         # adding methods for clases    
-        for method in clase.get('methods', []):
+        for method in element.get('methods', []):
+            methodName = method.get('name', '')
             abstract = "{abstract}" if method.get('isAbstract', False) else ''
             visibility = visibilities[method.get('visibility', 'public')]
             returnType =  method.get('returnType', 'void')
-            plantuml_str += f"{clase.get('name', '')} : {visibility} {abstract} {returnType} {method.get('name', '')}()\n"
-        
-        # adding relationsihps
-        for relation in clase.get('relationships', []):
-            relationType = relations_type[relation.get('type', [])]
-            # to implement the muliplicity
-            multiplicity = f"{relation['multiplicity']} " if 'multiplicity' in relation else ''
-            plantuml_str += f"{clase['name']} {relationType} {relation['target']}\n"
+            
+            # TODO add params (make a for to params inside the method)
+            params = ""
 
-        # adding interfaces implementeds
-        for interfaz in clase.get('implementsInterfaces', []):
-            plantuml_str += f"{clase['name']} ..|> {interfaz}\n"
-    
-    # interfaces
-    for interfaz in data.get('interfaces', []):
-        plantuml_str += f"interface {interfaz.get('name', 'interfazName')}\n"
-        for method in interfaz.get('methods', []):
-            plantuml_str += f"{interfaz.get('name', 'interfazName')} : {method.get('returnType', 'void')} {method.get('name', '')}()\n"
-    
+            plantuml_str += f"{elementName} : {visibility} {abstract} {returnType} {methodName}({params})\n"
+        
+    # adding relationsihps
+    for relation in data.get('relationShips', []):
+        relationType = relations_type[relation.get('type', '')]
+        source = relation.get('source', '') 
+        target = relation.get('target', '')
+        
+        # TODO add multiplicity 
+        multiplicity = f"{relation['multiplicity']} " if 'multiplicity' in relation else '1'
+        multiplicityEnd1 = multiplicity # split the multiplicity to end 1
+        multiplicityEnd2 = multiplicity # split the multiplicity to end 1
+        plantuml_str += f"{source} \"{multiplicityEnd1}\" {relationType} \"{multiplicityEnd2}\" {target}\n"
+
     return plantuml_str
 
 

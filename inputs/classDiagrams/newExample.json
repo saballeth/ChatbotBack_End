@@ -2,7 +2,7 @@
     "diagramType": "classDiagram",
     "declaringElements" : [
         {
-            "type": "\"abstract class\" | class | interface | enum | annotation | execption | struct",
+            "type": "abstract class | class | interface | enum | annotation | execption | struct",
             "attributes" : [
                 {
                     "name": "attributeName",
@@ -14,12 +14,17 @@
             ],
             "methods": [
                 {
-                    "name": "attributeName",
+                    "name": "methodName",
 					"type": "dataType",
                     "returnType": "returnType",
 					"visibility": "public | private | protected",
 					"isStatic": false,
-					"isFinal": false
+                    "params" : [
+                        {
+                            "type": "dataType",
+                            "name": "paramName"
+                        }
+                    ]
                 }
             ]
 
