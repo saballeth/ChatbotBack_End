@@ -3,7 +3,7 @@ import json
 import decoder
 
 
-with open(sys.argv[1], "r", encoding="utf-8") as input:
+with open("./inputs/" + sys.argv[1], "r", encoding="utf-8") as input:
     data = json.load(input)
 
 plant_uml_code = decoder.json_to_plantuml(data)

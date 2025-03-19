@@ -11,8 +11,8 @@ git clone https://github.com/carlosrs14/exportation-module.git
 2) open the project folder in your terminal or vscode with:
 cd exportation-module
 
-3) execute the program::
-python main.py <file-name>.json
+3) execute the program:
+python main.py ./inpus/dir/input.json
 
 4) output.puml is your output file
 
