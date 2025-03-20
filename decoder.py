@@ -49,23 +49,22 @@ def decodeClassDiagram(data:dict) -> str:
             abstract = "{abstract}" if method.get('isAbstract', False) else ''
             visibility = visibilities[method.get('visibility', 'public')]
             returnType =  method.get('returnType', 'void')
-            
             # TODO add params (make a for to params inside the method)
             params = ""
+            for param in method.get('params', []):
+                params += f"{param.get('type', '')} {param.get('name', '')} "
 
-            plantuml_str += f"{elementName} : {visibility} {abstract} {returnType} {methodName}({params})\n"
+            plantuml_str += f"{elementName} : {visibility} {abstract} {returnType} {methodName}({params[:-1]})\n" # params[:-1] para quitar un espcio en blanco
         
     # adding relationsihps
     for relation in data.get('relationShips', []):
         relationType = relations_type[relation.get('type', '')]
         source = relation.get('source', '') 
         target = relation.get('target', '')
+        multiplicityEnd1 = f"\"{relation['multiplicity'][0]}\"" if 'multiplicity' in relation else ''
+        multiplicityEnd2 = f"\"{relation['multiplicity'][3]}\"" if 'multiplicity' in relation else ''
         
-        # TODO add multiplicity 
-        multiplicity = f"{relation['multiplicity']} " if 'multiplicity' in relation else '1'
-        multiplicityEnd1 = multiplicity # split the multiplicity to end 1
-        multiplicityEnd2 = multiplicity # split the multiplicity to end 1
-        plantuml_str += f"{source} \"{multiplicityEnd1}\" {relationType} \"{multiplicityEnd2}\" {target}\n"
+        plantuml_str += f"{source} {multiplicityEnd1} {relationType} {multiplicityEnd2} {target}\n"
 
     return plantuml_str
 

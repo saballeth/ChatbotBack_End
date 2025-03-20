@@ -20,7 +20,6 @@
 					"visibility": "public"
                 }
             ]
-
         },
         {
             "type": "class",
@@ -35,7 +34,7 @@
             "methods": [
                 {
                     "name": "login",
-                    "returnType": "bool",
+                    "returnType": "Bool",
 					"visibility": "public",
                     "params" : [
                         {
@@ -49,7 +48,30 @@
                     ]
                 }
             ]
-
+        },
+        {
+            "type": "class",
+            "name" : "Cuenta",
+            "attributes" : [
+                {
+                    "name": "monto",
+					"type": "Float",
+					"visibility": "private"
+                }
+            ],
+            "methods": [
+                {
+                    "name": "recargar",
+                    "returnType": "Bool",
+					"visibility": "public",
+                    "params" : [
+                        {
+                            "type": "Float",
+                            "name": "valor"
+                        }
+                    ]
+                }
+            ]
         }
     ],
     "relationShips" : [
@@ -57,6 +79,12 @@
             "type" : "inheritance",
             "source" : "Persona",
             "target" : "Usuario"
+        },
+        {
+            "type" : "composition",
+            "source" : "Usuario",
+            "target" : "Cuenta",
+            "multiplicity" : "1..1"
         }
     ]
 }

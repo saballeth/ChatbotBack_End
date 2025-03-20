@@ -35,7 +35,7 @@
             "type" : "inheritance | composition | aggregation | association | instantiation | realization",
             "source" : "SourceClass",
             "target" : "TargetClass",
-            "multiplicity" : "1 | 0..* | 1..* | etc."
+            "multiplicity" : "1..1 | 0..* | 1..* | etc."
         }
     ]
 }
