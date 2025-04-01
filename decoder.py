@@ -175,8 +175,6 @@ class DecodeClass:
     def __init__(self, data:dict):
 
         self._data = data
-        self._class_code = self._generate_code()
-        
         self._visibilities = {
         "private": "-",
         "protected": "#",
@@ -191,6 +189,9 @@ class DecodeClass:
             "instantiation": "..|>",
             "realization": "<|..",
         }
+        self._class_code = self._generate_code()
+        
+
         
     def get_code(self) -> str:
         return self._class_code
