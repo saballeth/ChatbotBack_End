@@ -1,0 +1,55 @@
+{
+    "diagramType": "classDiagram | useCaseDiagram",
+    "classes": [
+      	{
+        	"name": "ClassName",
+        	"attributes": [
+				{
+					"name": "attributeName",
+					"type": "dataType",
+					"visibility": "public | private | protected",
+					"isStatic": false,
+					"isFinal": false
+				}
+        	],
+			"relationships": [
+				{
+					"type": "inheritance | composition | aggregation | association | instantiation | realization",
+					"target": "TargetClass",
+					"multiplicity": "1 | 0..* | 1..* | etc."
+				}
+			],
+			"isAbstract": false,
+			"implementsInterfaces": ["InterfaceName"]
+      	}
+    ],
+    "interfaces": [
+      	{
+			"name": "InterfaceName",
+			"methods": [
+				{ 
+					"name": "methodName",
+					"returnType": "ReturnType" 
+				}
+			]
+      	}
+    ],
+    "useCases": [
+		{
+			"name": "UseCaseName",
+			"actors": ["Actor1", "Actor2"],
+			"relationships": [
+				{
+					"type": "include | extend | association",
+					"target": "UseCaseName"
+				}
+			]
+		}
+    ],
+    "actors": [
+        {
+			"name": "ActorName",
+			"type": "primary | secondary"
+        }
+  	]
+}

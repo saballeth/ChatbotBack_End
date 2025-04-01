@@ -1,12 +1,21 @@
+import os
 import sys
-import json
-import decoder
+from decoder import *
+
+plant_uml_path = os.path.join(os.getcwd(), "plant_uml_exc")
+plant_uml_version = "plantuml-1.2025.2.jar"
+json_path = os.path.join(os.getcwd(), "inputs", sys.argv[1])
+output_path = os.path.join(os.getcwd(), "output")
+diagram_name = "output"
 
 
-with open("./inputs/" + sys.argv[1], "r", encoding="utf-8") as input:
-    data = json.load(input)
+config = {
+    "plant_uml_path": plant_uml_path,
+    "plant_uml_version": plant_uml_version,
+    "json_path": json_path,
+    "output_path": output_path,
+    "diagram_name": diagram_name,
+}
 
-plant_uml_code = decoder.json_to_plantuml(data)
-
-with open("output.puml", "+w", encoding="utf-8") as output:
-    output.write(plant_uml_code)
+json_puml = JsonPuml(config = config)
+json_puml.generate_diagram()
