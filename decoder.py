@@ -405,15 +405,15 @@ class DecodeClass:
 
                 plantuml_str += f"{elementName} : {visibility} {abstract} {returnType} {methodName}({params[:-1]})\n"  # params[:-1] elimina el último espacio
             
-            # Añadir relaciones entre clases
-            for relation in self._data.get('relationShips', []):
-                relationType = self._relations_type[relation.get('type', '')]
-                source = relation.get('source', '') 
-                target = relation.get('target', '')
-                multiplicityEnd1 = f"\"{relation['multiplicity'][0]}\"" if 'multiplicity' in relation else ''
-                multiplicityEnd2 = f"\"{relation['multiplicity'][3]}\"" if 'multiplicity' in relation else ''
-                
-                plantuml_str += f"{source} {multiplicityEnd1} {relationType} {multiplicityEnd2} {target}\n"
+        # Añadir relaciones entre clases
+        for relation in self._data.get('relationShips', []):
+            relationType = self._relations_type[relation.get('type', '')]
+            source = relation.get('source', '') 
+            target = relation.get('target', '')
+            multiplicityEnd1 = f"\"{relation['multiplicity'][0]}\"" if 'multiplicity' in relation else ''
+            multiplicityEnd2 = f"\"{relation['multiplicity'][3]}\"" if 'multiplicity' in relation else ''
+            
+            plantuml_str += f"{source} {multiplicityEnd1} {relationType} {multiplicityEnd2} {target}\n"
 
         return plantuml_str
 
