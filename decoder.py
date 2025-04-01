@@ -3,42 +3,109 @@ import json
 import os
 import subprocess
 
-class JsonPuml:
-    def __init__(self, config: dict):
+import os
+import subprocess
+import json
 
+class JsonPuml:
+    """
+    Clase para generar diagramas PlantUML a partir de un archivo JSON.
+    
+    Esta clase lee los datos de un archivo JSON, los convierte en código PlantUML,
+    y luego ejecuta PlantUML para generar la imagen correspondiente en el formato especificado.
+
+    Atributos:
+        _plant_uml_path (str): Ruta donde se encuentra el archivo JAR de PlantUML.
+        _plant_uml_version (str): Nombre del archivo JAR de PlantUML (por ejemplo, "plantuml-1.2025.2.jar").
+        _json_path (str): Ruta del archivo JSON que contiene la configuración y datos del diagrama.
+        _output_path (str): Ruta donde se generará el archivo de salida (diagrama generado).
+        _diagram_name (str): Nombre del diagrama (se usa para el archivo .puml de entrada y el archivo de salida).
+        _data (dict): Datos leídos desde el archivo JSON.
+        _code (str): Código PlantUML generado a partir de los datos del JSON.
+    """
+
+    def __init__(self, config: dict):
+        """
+        Inicializa la clase con la configuración proporcionada en el diccionario `config`.
+
+        Parámetros:
+            config (dict): Diccionario con las rutas y configuraciones necesarias.
+                           El diccionario debe contener las siguientes claves:
+                           - 'plant_uml_path': Ruta al directorio donde se encuentra el archivo JAR de PlantUML.
+                           - 'plant_uml_version': Nombre del archivo JAR de PlantUML (ejemplo: 'plantuml-1.2025.2.jar').
+                           - 'json_path': Ruta al archivo JSON que contiene los datos del diagrama.
+                           - 'output_path': Ruta donde se generará el archivo de salida.
+                           - 'diagram_name': Nombre del diagrama a generar.
+        """
         self._plant_uml_path = config['plant_uml_path']
         self._plant_uml_version = config['plant_uml_version']
         self._json_path = config['json_path']
         self._output_path = config['output_path']
         self._diagram_name = config['diagram_name']
 
+        # Cargar los datos del archivo JSON
         self._data = self._get_data()
+
+        # Convertir los datos JSON a código PlantUML
         self._code = self._json_to_plantuml()
 
     def generate_diagram(self):
+        """
+        Genera el diagrama a partir del código PlantUML.
+
+        Este método:
+        1. Crea la carpeta de salida si no existe.
+        2. Guarda el código PlantUML en un archivo `.puml`.
+        3. Ejecuta PlantUML para generar el diagrama en el formato deseado.
+        """
+        # Crear la carpeta de salida si no existe
         os.makedirs(self._output_path, exist_ok=True)
-        out = os.path.join(self._output_path, self._diagram_name+".puml")
+
+        # Ruta del archivo de entrada .puml
+        out = os.path.join(self._output_path, self._diagram_name + ".puml")
+
+        # Ruta al archivo JAR de PlantUML
         plant_uml = os.path.join(self._plant_uml_path, self._plant_uml_version)
 
+        # Guardar el código PlantUML en un archivo
         with open(out, "+w", encoding="utf-8") as output:
             output.write(self._code)
-    
+
+        # Ejecutar PlantUML para generar la imagen
         subprocess.run([
-            "java", "-jar", plant_uml,            
-            "-o", self._output_path,     
-            out                           
+            "java", "-jar", plant_uml,  # Ejecutar PlantUML
+            "-o", self._output_path,    # Carpeta de salida
+            out                         # Archivo .puml de entrada
         ])
-        
 
-    
     def _get_data(self) -> dict:
-        with open(self._json_path, "r", encoding="utf-8") as input:
-            data = json.load(input) 
-        return data
-    
-    def _json_to_plantuml(self) -> str:
-        plantuml_str =  "@startuml Diagram\n"
+        """
+        Carga los datos del archivo JSON.
 
+        Este método abre el archivo JSON especificado en la configuración,
+        lee los datos y los devuelve como un diccionario.
+
+        Returns:
+            dict: Los datos cargados del archivo JSON.
+        """
+        with open(self._json_path, "r", encoding="utf-8") as input:
+            data = json.load(input)
+        return data
+
+    def _json_to_plantuml(self) -> str:
+        """
+        Convierte los datos JSON a código PlantUML.
+
+        Dependiendo del tipo de diagrama especificado en los datos JSON (como 'classDiagram' o 'useCaseDiagram'),
+        este método genera el código correspondiente en el formato PlantUML.
+
+        Returns:
+            str: El código PlantUML generado a partir de los datos JSON.
+        """
+        # Iniciar el código PlantUML
+        plantuml_str = "@startuml Diagram\n"
+
+        # Decodificar los datos en función del tipo de diagrama
         if self._data["diagramType"] == "classDiagram":
             decode_class = DecodeClass(self._data)
             plantuml_str += decode_class.get_code()
@@ -46,19 +113,51 @@ class JsonPuml:
             decode_use_case = DecodeUseCase(self._data)
             plantuml_str += decode_use_case.get_code()
 
+        # Finalizar el código PlantUML
         plantuml_str += "@enduml"
         return plantuml_str
     
 
 class DecodeUseCase:
-    def __init__(self, data:dict):
+    """
+    Esta clase se encarga de generar el código PlantUML para un diagrama de casos de uso.
+    El código es generado a partir de los datos proporcionados en formato JSON, los cuales 
+    contienen información sobre actores, casos de uso, paquetes y relaciones.
+
+    Atributos:
+    - _data (dict): Los datos en formato JSON que describen el diagrama de casos de uso.
+    - _use_case_code (str): El código PlantUML generado para el diagrama.
+    """
+
+    def __init__(self, data: dict):
+        """
+        Inicializa la clase con los datos del diagrama en formato JSON.
+
+        Parámetros:
+        - data (dict): El diccionario que contiene los datos del diagrama en formato JSON.
+        """
         self._data = data
         self._use_case_code = self._generate_code()
 
     def get_code(self) -> str:
+        """
+        Obtiene el código PlantUML generado para el diagrama de casos de uso.
+
+        Retorna:
+        - str: El código PlantUML para el diagrama.
+        """
         return self._use_case_code
 
     def _generate_code(self) -> str:
+        """
+        Genera el código PlantUML para el diagrama de casos de uso a partir de los datos JSON.
+
+        Este método recorre los datos JSON y genera las representaciones correspondientes para
+        los actores, casos de uso, paquetes y relaciones.
+
+        Retorna:
+        - str: El código PlantUML generado para el diagrama.
+        """
         plantuml_str = ""
 
         # Actores
@@ -79,7 +178,17 @@ class DecodeUseCase:
         return plantuml_str
 
 
-    def _decodeUseCaseActor(self, current_code:str, data) -> str:
+    def _decodeUseCaseActor(self, current_code: str, data) -> str:
+        """
+        Decodifica un actor y lo convierte a código PlantUML.
+
+        Parámetros:
+        - current_code (str): El código PlantUML generado hasta el momento.
+        - data (dict): Los datos del actor (nombre, alias, estereotipo, etc.).
+
+        Retorna:
+        - str: El código PlantUML actualizado con el actor.
+        """
         plantuml_str = current_code
 
         actor_name = data.get("name", "")
@@ -95,7 +204,17 @@ class DecodeUseCase:
         
         return plantuml_str
 
-    def _decodeUseCase(self, current_code:str, data) -> str:
+    def _decodeUseCase(self, current_code: str, data) -> str:
+        """
+        Decodifica un caso de uso y lo convierte a código PlantUML.
+
+        Parámetros:
+        - current_code (str): El código PlantUML generado hasta el momento.
+        - data (dict): Los datos del caso de uso (nombre, alias, estereotipo, etc.).
+
+        Retorna:
+        - str: El código PlantUML actualizado con el caso de uso.
+        """
         plantuml_str = current_code
 
         usecase_name = data.get("name", "")
@@ -110,6 +229,16 @@ class DecodeUseCase:
 
 
     def _decodeUseCasePackage(self, current_code: str, data) -> str:
+        """
+        Decodifica los paquetes de casos de uso y actores, generando el código PlantUML correspondiente.
+
+        Parámetros:
+        - current_code (str): El código PlantUML generado hasta el momento.
+        - data (dict): Los datos del paquete (que contiene casos de uso y actores).
+
+        Retorna:
+        - str: El código PlantUML actualizado con los paquetes.
+        """
         plantuml_str = current_code
         packages = data.get("packages", [])
         if not packages:
@@ -130,7 +259,17 @@ class DecodeUseCase:
 
         return plantuml_str
     
-    def _decodeRelationships(self, current_code:str, data) -> str:
+    def _decodeRelationships(self, current_code: str, data) -> str:
+        """
+        Decodifica las relaciones entre actores y casos de uso y las convierte a código PlantUML.
+
+        Parámetros:
+        - current_code (str): El código PlantUML generado hasta el momento.
+        - data (dict): Los datos de la relación (tipo, principal, secundario, dirección, etc.).
+
+        Retorna:
+        - str: El código PlantUML actualizado con la relación.
+        """
         plantuml_str = current_code
 
         relation_type = data.get("type", "")
@@ -139,10 +278,10 @@ class DecodeUseCase:
         relation_direction = data.get("direction", "")
         relation_label = f":\"{data.get('label', '')}\"" if data.get('label') else ""
 
-        #Only actor_actor
+        # Solo actor_actor
         relation_extend = data.get("extend", "")
         
-        #only usecase_usecase 
+        # Solo usecase_usecase 
         relation_stereotype = data.get("stereotype", "")
 
         if(relation_principal and relation_secondary):
@@ -169,18 +308,40 @@ class DecodeUseCase:
 
         return plantuml_str
 
-
-
 class DecodeClass:
-    def __init__(self, data:dict):
+    """
+    Esta clase genera código PlantUML para diagramas de clases a partir de un archivo de datos JSON.
+    
+    Atributos:
+        _data (dict): Los datos en formato JSON que describen las clases, atributos, métodos y relaciones.
+        _visibilities (dict): Diccionario que mapea los niveles de visibilidad a su representación PlantUML.
+        _relations_type (dict): Diccionario que mapea los tipos de relaciones a su representación PlantUML.
+        _class_code (str): El código PlantUML generado a partir de los datos JSON.
 
+    Métodos:
+        __init__(self, data: dict): Inicializa la clase con los datos del diagrama de clases en formato JSON.
+        get_code(self) -> str: Retorna el código PlantUML generado para el diagrama de clases.
+        _generate_code(self) -> str: Genera el código PlantUML a partir de los datos del diagrama de clases.
+    """
+    
+    def __init__(self, data: dict):
+        """
+        Inicializa la clase con los datos del diagrama de clases en formato JSON.
+
+        Parámetros:
+            data (dict): Los datos del diagrama de clases, incluyendo clases, atributos, métodos y relaciones.
+        """
         self._data = data
+
+        # Mapeo de visibilidades en PlantUML
         self._visibilities = {
-        "private": "-",
-        "protected": "#",
-        "package private": "~",
-        "public": "+"
+            "private": "-",
+            "protected": "#",
+            "package private": "~",
+            "public": "+"
         }
+
+        # Mapeo de tipos de relaciones en PlantUML
         self._relations_type = {
             "inheritance": "<|--",
             "composition": "*--",
@@ -189,22 +350,39 @@ class DecodeClass:
             "instantiation": "..|>",
             "realization": "<|..",
         }
-        self._class_code = self._generate_code()
-        
 
-        
+        # Genera el código PlantUML
+        self._class_code = self._generate_code()
+
     def get_code(self) -> str:
+        """
+        Obtiene el código PlantUML generado para el diagrama de clases.
+
+        Retorna:
+            str: El código PlantUML para el diagrama de clases.
+        """
         return self._class_code
 
     def _generate_code(self) -> str:
+        """
+        Genera el código PlantUML a partir de los datos del diagrama de clases en formato JSON.
+
+        Este método recorre los datos del diagrama y construye el código PlantUML correspondiente
+        a las clases, atributos, métodos y relaciones entre clases.
+
+        Retorna:
+            str: El código PlantUML generado para el diagrama de clases.
+        """
         plantuml_str = ""
+
+        # Recorre los elementos declarados (clases)
         for element in self._data.get('declaringElements', []):
-            # declare the class
+            # Declara la clase
             type = element.get('type', '')
             elementName = element.get('name', '')
             plantuml_str += f"{type} {elementName}\n"
             
-            # adding attributes for clases
+            # Añadir atributos para las clases
             for attribute in element.get('attributes', []):
                 attributeName = attribute.get('name', '')
                 attributeType = attribute.get('type', '')
@@ -213,20 +391,21 @@ class DecodeClass:
                 final = "{final}" if attribute.get('isFinal', False) else ''
                 plantuml_str += f"{elementName} : {visibility} {static} {final} {attributeType} {attributeName}\n"
 
-            # adding methods for clases    
+            # Añadir métodos para las clases    
             for method in element.get('methods', []):
                 methodName = method.get('name', '')
                 abstract = "{abstract}" if method.get('isAbstract', False) else ''
                 visibility = self._visibilities[method.get('visibility', 'public')]
                 returnType =  method.get('returnType', 'void')
-                # TODO add params (make a for to params inside the method)
+                
+                # Añadir parámetros a los métodos
                 params = ""
                 for param in method.get('params', []):
                     params += f"{param.get('type', '')} {param.get('name', '')} "
 
-                plantuml_str += f"{elementName} : {visibility} {abstract} {returnType} {methodName}({params[:-1]})\n" # params[:-1] para quitar un espcio en blanco
+                plantuml_str += f"{elementName} : {visibility} {abstract} {returnType} {methodName}({params[:-1]})\n"  # params[:-1] elimina el último espacio
             
-            # adding relationsihps
+            # Añadir relaciones entre clases
             for relation in self._data.get('relationShips', []):
                 relationType = self._relations_type[relation.get('type', '')]
                 source = relation.get('source', '') 
@@ -237,5 +416,4 @@ class DecodeClass:
                 plantuml_str += f"{source} {multiplicityEnd1} {relationType} {multiplicityEnd2} {target}\n"
 
         return plantuml_str
-        
 
