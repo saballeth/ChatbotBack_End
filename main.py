@@ -78,16 +78,36 @@ class DiagramRequest(BaseModel):
 # --- Endpoint para recibir feedback del LLM ---
 @app.post("/llm-feedback")
 async def llm_feedback(data: PromptRequest):
-    prompt = data.prompt
     try:
-        system_prompt = "Eres un experto en ingeniería de software y diagramas UML. Tu tarea es revisar si los enunciados están bien redactados para generar un diagrama UML adecuado."
-        user_prompt = f"Este es el prompt del usuario: '{prompt}'. ¿Está bien formulado para generar un diagrama UML? Si no, sugiere cómo mejorarlo."
+        system_prompt = (
+            "Responde siempre en español. Eres un experto en ingeniería de software y diagramas UML. "
+            "Tu tarea es revisar si los enunciados están bien redactados para generar un diagrama UML adecuado."
+        )
+        user_prompt = (
+            f"Este es el prompt del usuario: '{data.prompt}'. ¿Está bien formulado para generar un diagrama UML? "
+            "Si no, sugiere cómo mejorarlo."
+        )
+
         full_prompt = f"{system_prompt}\n{user_prompt}"
-        response = hf_chat(full_prompt)
-        feedback = response[0]['generated_text']
+
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "mistral",  
+                "prompt": full_prompt,
+                "stream": False
+            }
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail="Error al consultar Ollama")
+
+        result = response.json()
+        feedback = result.get("response", "").strip()
         return {"feedback": feedback}
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar el modelo Hugging Face: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al procesar la solicitud: {e}")
 
 # --- Endpoint para generar y enviar el diagrama ---
 @app.post("/generate-diagram")
