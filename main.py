@@ -5,8 +5,15 @@ from pydantic import BaseModel
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 import jsonschema
-import ollama
 from fastapi.middleware.cors import CORSMiddleware
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
+
+model_id = "tiiuae/falcon-7b-instruct"
+
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id)
+
+hf_chat = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256)
 
 app = FastAPI()
 
@@ -68,21 +75,19 @@ class DiagramRequest(BaseModel):
     # Puedes definir aquí el esquema esperado si lo deseas
     pass
 
-# --- Endpoint para feedback del LLM ---
+# --- Endpoint para recibir feedback del LLM ---
 @app.post("/llm-feedback")
 async def llm_feedback(data: PromptRequest):
     prompt = data.prompt
     try:
-        response = ollama.chat(
-            model="llama2",
-            messages=[
-                {"role": "system", "content": "Eres un experto en UML."},
-                {"role": "user", "content": f"Este es el prompt del usuario: '{prompt}'. ¿Está bien formulado para generar un diagrama UML? Si no, sugiere cómo mejorarlo."}
-            ]
-        )
-        return {"feedback": response['message']['content']}
+        system_prompt = "Eres un experto en ingeniería de software y diagramas UML. Tu tarea es revisar si los enunciados están bien redactados para generar un diagrama UML adecuado."
+        user_prompt = f"Este es el prompt del usuario: '{prompt}'. ¿Está bien formulado para generar un diagrama UML? Si no, sugiere cómo mejorarlo."
+        full_prompt = f"{system_prompt}\n{user_prompt}"
+        response = hf_chat(full_prompt)
+        feedback = response[0]['generated_text']
+        return {"feedback": feedback}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al consultar el LLM: {e}")
+        raise HTTPException(status_code=500, detail=f"Error al consultar el modelo Hugging Face: {e}")
 
 # --- Endpoint para generar y enviar el diagrama ---
 @app.post("/generate-diagram")
