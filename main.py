@@ -6,20 +6,13 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 import jsonschema
 from fastapi.middleware.cors import CORSMiddleware
-from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
-
-model_id = "tiiuae/falcon-7b-instruct"
-
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-model = AutoModelForCausalLM.from_pretrained(model_id)
-
-hf_chat = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=256)
+import requests
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3001"],
+    allow_origins=["http://localhost:3002"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,7 +69,7 @@ class DiagramRequest(BaseModel):
     pass
 
 # --- Endpoint para recibir feedback del LLM ---
-@app.post("/llm-feedback")
+@app.post("/api/llm-feedback")
 async def llm_feedback(data: PromptRequest):
     try:
         system_prompt = (
