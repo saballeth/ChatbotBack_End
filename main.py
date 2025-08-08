@@ -3,16 +3,17 @@ import sys
 from decoder import JsonPuml
 from pydantic import BaseModel
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 import jsonschema
 from fastapi.middleware.cors import CORSMiddleware
 import requests
+import ollama
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3002"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,58 +79,72 @@ async def llm_feedback(data: PromptRequest):
         )
         user_prompt = (
             f"Este es el prompt del usuario: '{data.prompt}'. ¿Está bien formulado para generar un diagrama UML? "
-            "Si no, sugiere cómo mejorarlo."
+            "Si no, sugiere cómo mejorarlo en respuestas breves que tengan entre 100 y 300 palabras."
         )
 
         full_prompt = f"{system_prompt}\n{user_prompt}"
 
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "mistral",  
-                "prompt": full_prompt,
-                "stream": False
-            }
-        )
+        # Función generadora para enviar el texto a medida que llega
+        def stream_feedback():
+            for chunk in ollama.chat(
+                model="mistral",
+                messages=[{"role": "user", "content": full_prompt}],
+                stream=True
+            ):
+                yield chunk["message"]["content"]
 
-        if response.status_code != 200:
-            raise HTTPException(status_code=500, detail="Error al consultar Ollama")
-
-        result = response.json()
-        feedback = result.get("response", "").strip()
-        return {"feedback": feedback}
+        return StreamingResponse(stream_feedback(), media_type="text/plain")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al procesar la solicitud: {e}")
-
+    
 # --- Endpoint para generar y enviar el diagrama ---
 @app.post("/generate-diagram")
 async def generate_diagram(request: Request):
     data = await request.json()
-    # 1. Validación
+
+    # 1️⃣ Validación con jsonschema
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError as e:
-        return JSONResponse(status_code=400, content={"error": f"❌ Entrada no válida: {e.message}"})
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"❌ Entrada no válida: {e.message}"}
+        )
 
-    # 2. Generación del código PlantUML y del diagrama
-    try:
-        config = {
-            "plant_uml_path": os.path.join(os.getcwd(), "plant_uml_exc"),
-            "plant_uml_version": "plantuml-1.2025.2.jar",
-            "json_path": None,  # No se usa aquí, pasamos el dict directamente
-            "output_path": os.path.join(os.getcwd(), "output"),
-            "diagram_name": "output",
-        }
-        json_puml = JsonPuml(config=config)
-        json_puml._data = data  # Sobrescribe los datos cargados desde archivo
-        json_puml._code = json_puml._json_to_plantuml()
-        json_puml.generate_diagram()
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"Error al generar el diagrama: {e}"})
+    # Check if we should stream the response or generate a diagram
+    if "stream" in data and data["stream"]:
+        # 2️⃣ Función generadora para streaming
+        def stream_response():
+            for chunk in ollama.chat(
+                model="mistral",
+                messages=[{"role": "user", "content": data["prompt"]}],
+                stream=True
+            ):
+                # Enviar solo el texto del mensaje
+                yield chunk["message"]["content"]
 
-    # 3. Envío del archivo generado
-    svg_path = os.path.join(config["output_path"], config["diagram_name"] + ".svg")
-    if not os.path.exists(svg_path):
-        return JSONResponse(status_code=500, content={"error": "No se pudo generar el archivo SVG."})
-    return FileResponse(svg_path, media_type="image/svg+xml")
+        # 3️⃣ Devolver streaming al frontend
+        return StreamingResponse(stream_response(), media_type="text/plain")
+    else:
+        # 2. Generación del código PlantUML y del diagrama
+        try:
+            config = {
+                "plant_uml_path": os.path.join(os.getcwd(), "plant_uml_exc"),
+                "plant_uml_version": "plantuml-1.2025.2.jar",
+                "json_path": None,  # No se usa aquí, pasamos el dict directamente
+                "output_path": os.path.join(os.getcwd(), "output"),
+                "diagram_name": "output",
+            }
+            json_puml = JsonPuml(config=config)
+            json_puml._data = data  # Sobrescribe los datos cargados desde archivo
+            json_puml._code = json_puml._json_to_plantuml()
+            json_puml.generate_diagram()
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": f"Error al generar el diagrama: {e}"})
+
+        # 3. Envío del archivo generado
+        svg_path = os.path.join(config["output_path"], config["diagram_name"] + ".svg")
+        if not os.path.exists(svg_path):
+            return JSONResponse(status_code=500, content={"error": "No se pudo generar el archivo SVG."})
+        return FileResponse(svg_path, media_type="image/svg+xml")
