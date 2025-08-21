@@ -66,7 +66,7 @@ class PromptRequest(BaseModel):
     prompt: str
 
 class DiagramRequest(BaseModel):
-    # Puedes definir aquí el esquema esperado si lo deseas
+    # Esquema sin definir
     pass
 
 # --- Endpoint para recibir feedback del LLM ---
@@ -103,7 +103,7 @@ async def llm_feedback(data: PromptRequest):
 async def generate_diagram(request: Request):
     data = await request.json()
 
-    # 1️⃣ Validación con jsonschema
+    # Validación con jsonschema
     try:
         jsonschema.validate(instance=data, schema=schema)
     except jsonschema.ValidationError as e:
@@ -114,7 +114,7 @@ async def generate_diagram(request: Request):
 
     # Check if we should stream the response or generate a diagram
     if "stream" in data and data["stream"]:
-        # 2️⃣ Función generadora para streaming
+        #  Función generadora para streaming
         def stream_response():
             for chunk in ollama.chat(
                 model="mistral",
@@ -124,7 +124,7 @@ async def generate_diagram(request: Request):
                 # Enviar solo el texto del mensaje
                 yield chunk["message"]["content"]
 
-        # 3️⃣ Devolver streaming al frontend
+        # Devolver streaming al frontend
         return StreamingResponse(stream_response(), media_type="text/plain")
     else:
         # 2. Generación del código PlantUML y del diagrama
